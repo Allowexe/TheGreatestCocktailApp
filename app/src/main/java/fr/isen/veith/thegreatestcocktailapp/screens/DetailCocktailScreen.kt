@@ -1,6 +1,7 @@
 package fr.isen.veith.thegreatestcocktailapp.screens
 
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -97,9 +98,9 @@ fun DetailCocktailScreen(modifier: Modifier, drinkID: String? = null) {
                 )
 
 
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    InfoBadge(text = drink.category)
-                    drink.glass?.let { InfoBadge(text = it) }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CategoryBadge(text = drink.category, color = Color(0xFF4895EF))
+                    drink.glass?.let { CategoryBadge(text = it, color = Color(0xFF4CC9F0)) }
                 }
 
 
@@ -165,5 +166,22 @@ fun DetailCard(title: String, content: @Composable ColumnScope.() -> Unit) {
             )
             content()
         }
+    }
+}
+
+@Composable
+fun CategoryBadge(text: String, color: Color) {
+    Surface(
+        color = color.copy(alpha = 0.2f),
+        shape = RoundedCornerShape(50),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.5f))
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            color = Color.White,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
