@@ -2,21 +2,12 @@ package fr.isen.veith.thegreatestcocktailapp.screens
 
 import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
-import androidx.compose.material3.Text
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +19,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -39,97 +31,139 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-data class Ingredient(val ingredient: String, val measure: String)
-
 @Composable
 fun DetailCocktailScreen(modifier: Modifier, drinkID: String? = null) {
-    val ingredients = listOf(
-        Ingredient("vodka", "4cl"),
-        Ingredient("curacao", "3cl"),
-        Ingredient("lime juice", "2cl")
-    )
+    val drinkState = remember { mutableStateOf<DrinkModel?>(null) }
+    val scrollState = rememberScrollState()
 
-    val drink = remember { mutableStateOf(DrinkModel()) }
+    // 1. Récupération des données selon le contexte (ID spécifique ou Aléatoire)
+    LaunchedEffect(drinkID) {
+        val call = if (drinkID != null) {
+            NetworkManager.api.getDrinkById(drinkID) // Étape 5 [cite: 41]
+        } else {
+            NetworkManager.api.getRandomCocktail() // Étape 4 [cite: 46]
+        }
 
-    LaunchedEffect(Unit) {
-        val call = NetworkManager.api.getRandomCocktail()
         call.enqueue(object : Callback<Drinks> {
-            override fun onResponse(p0: Call<Drinks?>,p1: Response<Drinks?>) {
-                drink.value = p1.body()?.drinks?.first() ?: DrinkModel()
+            override fun onResponse(call: Call<Drinks>, response: Response<Drinks>) {
+                drinkState.value = response.body()?.drinks?.firstOrNull()
             }
-
-            override fun onFailure(p0: Call<Drinks?>, p1: Throwable) {
-                Log.e("error", p1.message.toString())
+            override fun onFailure(call: Call<Drinks>, t: Throwable) {
+                Log.e("API_ERROR", "Échec de récupération : ${t.message}")
             }
         })
     }
 
-    Column(modifier
-        .fillMaxSize()
-        .background(brush = Brush.linearGradient(listOf(Color.Cyan, Color.Black)))
-        .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        AsyncImage(
-            drink.value.imageURL,
-            contentDescription = drink.value.name,
-            modifier = Modifier
-                .size(200.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
-        )
+    val drink = drinkState.value
 
-//        Image(
-//            painterResource(R.drawable.cocktail),
-//            contentDescription = "photo cocktail",
-//            modifier = Modifier
-//                .size(200.dp)
-//                .clip(CircleShape),
-//            contentScale = ContentScale.Crop
-//            )
-
-        Text(drink.value.name,
-            color = Color.White,
-            fontSize = 30.sp)
-
-        Row(Modifier.wrapContentHeight()) {
-            Box(Modifier
-                .background(
-                    color = Color.White.copy(0.7f),
-                    shape = RoundedCornerShape(20.dp)
-                )
+    // 2. Interface utilisateur
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(brush = Brush.verticalGradient(listOf(Color(0xFF00B4D8), Color.Black)))
+    ) {
+        if (drink == null) {
+            // Écran de chargement
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                color = Color.White
+            )
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                Text(drink.value.category,
-                    Modifier.padding(4.dp)
+                // Image du cocktail
+                AsyncImage(
+                    model = drink.imageURL,
+                    contentDescription = drink.name,
+                    modifier = Modifier
+                        .size(220.dp)
+                        .clip(CircleShape)
+                        .background(Color.Gray.copy(0.3f)),
+                    contentScale = ContentScale.Crop
                 )
-            }
-        }
 
-        Text("glass type",
-            color = Color.White,
-            fontSize = 20.sp
-        )
-
-        Card(Modifier.fillMaxWidth(),
-            RoundedCornerShape(25.dp),
-            CardColors(Color.White.copy(0.2f),
-                Color.Unspecified,
-                Color.Unspecified,
-                Color.Unspecified)) {
-            Column(Modifier.padding(16.dp)) {
+                // Nom du cocktail
                 Text(
-                    stringResource(R.string.detail_ingredients_title),
+                    text = drink.name,
                     color = Color.White,
-                    fontSize = 25.sp)
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold
+                )
 
-                ingredients.forEach { (ingredient, measure) ->
-                    Row(Modifier.wrapContentHeight()) {
-                        Text(ingredient, color = Color.White)
-                        Spacer(Modifier.weight(1f))
-                        Text(measure, color = Color.White)
+                // Tags (Catégorie & Verre)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    InfoBadge(text = drink.category)
+                    drink.glass?.let { InfoBadge(text = it) }
+                }
+
+                // Carte des Ingrédients
+                DetailCard(title = stringResource(R.string.detail_ingredients_title)) {
+                    val list = drink.getIngredientsList()
+                    if (list.isEmpty()) {
+                        Text("Aucun ingrédient répertorié", color = Color.White.copy(0.7f))
+                    } else {
+                        list.forEach { item ->
+                            Text("• $item", color = Color.White, fontSize = 16.sp)
+                        }
                     }
                 }
+
+                // Carte de la Recette (Instructions)
+                DetailCard(title = "Recette") {
+                    Text(
+                        text = drink.instructions ?: "Aucune instruction disponible.",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        lineHeight = 22.sp
+                    )
+                }
+
+                // Espacement final pour ne pas coller à la barre de navigation
+                Spacer(modifier = Modifier.height(50.dp))
             }
+        }
+    }
+}
+
+@Composable
+fun InfoBadge(text: String) {
+    Surface(
+        color = Color.White.copy(0.2f),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            color = Color.White,
+            fontSize = 14.sp
+        )
+    }
+}
+
+@Composable
+fun DetailCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(0.1f))
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = title,
+                color = Color.Cyan,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            content()
         }
     }
 }

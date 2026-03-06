@@ -8,6 +8,12 @@ interface ApiService {
     @GET("random.php")
     fun getRandomCocktail(): Call<Drinks>
 
+    @GET("list.php?c=list")
+    fun getCategories(): Call<Drinks>
+
     @GET("filter.php")
     fun getDrinksByCategory(@Query("c") category: String): Call<Drinks>
+
+    @GET("lookup.php")
+    fun getDrinkById(@Query("i") drinkId: String): Call<Drinks>
 }
