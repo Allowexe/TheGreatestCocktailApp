@@ -36,12 +36,12 @@ fun DetailCocktailScreen(modifier: Modifier, drinkID: String? = null) {
     val drinkState = remember { mutableStateOf<DrinkModel?>(null) }
     val scrollState = rememberScrollState()
 
-    // 1. Récupération des données selon le contexte (ID spécifique ou Aléatoire)
+
     LaunchedEffect(drinkID) {
         val call = if (drinkID != null) {
-            NetworkManager.api.getDrinkById(drinkID) // Étape 5 [cite: 41]
+            NetworkManager.api.getDrinkById(drinkID)
         } else {
-            NetworkManager.api.getRandomCocktail() // Étape 4 [cite: 46]
+            NetworkManager.api.getRandomCocktail()
         }
 
         call.enqueue(object : Callback<Drinks> {
@@ -56,14 +56,14 @@ fun DetailCocktailScreen(modifier: Modifier, drinkID: String? = null) {
 
     val drink = drinkState.value
 
-    // 2. Interface utilisateur
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(brush = Brush.verticalGradient(listOf(Color(0xFF00B4D8), Color.Black)))
     ) {
         if (drink == null) {
-            // Écran de chargement
+
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
                 color = Color.White
@@ -77,7 +77,7 @@ fun DetailCocktailScreen(modifier: Modifier, drinkID: String? = null) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                // Image du cocktail
+
                 AsyncImage(
                     model = drink.imageURL,
                     contentDescription = drink.name,
@@ -88,7 +88,7 @@ fun DetailCocktailScreen(modifier: Modifier, drinkID: String? = null) {
                     contentScale = ContentScale.Crop
                 )
 
-                // Nom du cocktail
+
                 Text(
                     text = drink.name,
                     color = Color.White,
@@ -96,13 +96,13 @@ fun DetailCocktailScreen(modifier: Modifier, drinkID: String? = null) {
                     fontWeight = FontWeight.Bold
                 )
 
-                // Tags (Catégorie & Verre)
+
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     InfoBadge(text = drink.category)
                     drink.glass?.let { InfoBadge(text = it) }
                 }
 
-                // Carte des Ingrédients
+
                 DetailCard(title = stringResource(R.string.detail_ingredients_title)) {
                     val list = drink.getIngredientsList()
                     if (list.isEmpty()) {
@@ -114,7 +114,7 @@ fun DetailCocktailScreen(modifier: Modifier, drinkID: String? = null) {
                     }
                 }
 
-                // Carte de la Recette (Instructions)
+
                 DetailCard(title = "Recette") {
                     Text(
                         text = drink.instructions ?: "Aucune instruction disponible.",
@@ -124,7 +124,7 @@ fun DetailCocktailScreen(modifier: Modifier, drinkID: String? = null) {
                     )
                 }
 
-                // Espacement final pour ne pas coller à la barre de navigation
+
                 Spacer(modifier = Modifier.height(50.dp))
             }
         }

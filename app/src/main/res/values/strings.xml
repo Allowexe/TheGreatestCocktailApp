@@ -8,4 +8,5 @@
     <string name="snackbar_added">Ajouté aux favoris</string>
     <string name="snackbar_removed">Retiré des favoris</string>
     <string name="detail_ingredients_title">Ingredients</string>
+    <string name="nav_title_search">Recherche</string>
 </resources>

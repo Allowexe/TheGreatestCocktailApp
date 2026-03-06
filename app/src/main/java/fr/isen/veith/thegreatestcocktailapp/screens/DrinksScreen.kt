@@ -3,26 +3,24 @@ package fr.isen.veith.thegreatestcocktailapp.screens
 import android.content.Intent
 import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import fr.isen.veith.thegreatestcocktailapp.DetailCocktailActivity
 import fr.isen.veith.thegreatestcocktailapp.network.DrinkModel
 import fr.isen.veith.thegreatestcocktailapp.network.Drinks
@@ -33,55 +31,92 @@ import retrofit2.Response
 
 @Composable
 fun DrinksScreen(modifier: Modifier, category: String) {
-//    val drinks = listOf(
-//        "Mojito",
-//        "Negroni",
-//        "Blue Lagoon",
-//        "Cuba Libre"
-//    )
+    val drinksState = remember { mutableStateOf<List<DrinkModel>>(emptyList()) }
+    val isLoading = remember { mutableStateOf(true) }
+    val context = LocalContext.current
 
-    val drinks = remember { mutableStateOf<List<DrinkModel>>(listOf()) }
 
-    LaunchedEffect(Unit) {
-        val call = NetworkManager.api.getDrinksByCategory(category.replace(" ", "_"))
+    LaunchedEffect(category) {
+        val call = NetworkManager.api.getDrinksByCategory(category)
         call.enqueue(object : Callback<Drinks> {
-            override fun onResponse(p0: Call<Drinks?>,p1: Response<Drinks?>) {
-                drinks.value = p1.body()?.drinks ?: listOf()
+            override fun onResponse(call: Call<Drinks>, response: Response<Drinks>) {
+                if (response.isSuccessful) {
+                    drinksState.value = response.body()?.drinks ?: emptyList()
+                }
+                isLoading.value = false
             }
 
-            override fun onFailure(p0: Call<Drinks?>, p1: Throwable) {
-                Log.e("error", p1.message.toString())
+            override fun onFailure(call: Call<Drinks>, t: Throwable) {
+                Log.e("API_ERROR", "Erreur cocktails : ${t.message}")
+                isLoading.value = false
             }
         })
     }
 
-    LazyColumn(modifier
+    Box(modifier = modifier
         .fillMaxSize()
-        .background(brush = Brush.linearGradient(listOf(Color.Cyan, Color.Black)))
-        .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item {
-            Text(category, color = Color.White, fontSize = 50.sp)
-        }
+        .background(brush = Brush.verticalGradient(listOf(Color.Cyan, Color.Black)))) {
 
-        items(drinks.value) { drink ->
-            val context = LocalContext.current
-            Button(
-                onClick = {
-                    val intent = Intent(context, DetailCocktailActivity::class.java)
-                    intent.putExtra("drinkID", drink.id)
-                    context.startActivity(intent)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(25.dp),
-                colors = ButtonColors(
-                    Color.White.copy(0.3f),
-                    Color.White,
-                    Color.Unspecified,
-                    Color.Unspecified
-                )
+        if (isLoading.value) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(drink.name, fontSize = 30.sp)
+
+                item {
+                    Text(
+                        text = category,
+                        color = Color.White,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+
+
+                items(drinksState.value) { drink ->
+                    Button(
+                        onClick = {
+
+                            val intent = Intent(context, DetailCocktailActivity::class.java)
+                            intent.putExtra("drinkID", drink.id)
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White.copy(0.2f),
+                            contentColor = Color.White
+                        ),
+                        contentPadding = PaddingValues(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+
+                            AsyncImage(
+                                model = drink.imageURL,
+                                contentDescription = drink.name,
+                                modifier = Modifier
+                                    .size(60.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.Gray.copy(0.3f)),
+                                contentScale = ContentScale.Crop
+                            )
+
+                            Spacer(modifier = Modifier.width(16.dp))
+
+                            Text(
+                                text = drink.name,
+                                fontSize = 18.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
             }
         }
     }

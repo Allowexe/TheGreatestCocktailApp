@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -35,8 +36,11 @@ import androidx.navigation.compose.rememberNavController
 import fr.isen.veith.thegreatestcocktailapp.screens.CategoriesScreen
 import fr.isen.veith.thegreatestcocktailapp.screens.DetailCocktailScreen
 import fr.isen.veith.thegreatestcocktailapp.screens.FavoriteScreen
+import fr.isen.veith.thegreatestcocktailapp.screens.SearchScreen
+
 import fr.isen.veith.thegreatestcocktailapp.ui.theme.TheGreatestCocktailAppTheme
 import kotlinx.coroutines.launch
+
 
 enum class NavigationItem(
     val titleID: Int,
@@ -45,6 +49,7 @@ enum class NavigationItem(
 ) {
     Home(R.string.nav_title_random, Icons.Default.Home, "home"),
     List(R.string.nav_title_category, Icons.Default.Menu, "list"),
+    Search(R.string.nav_title_search, Icons.Default.Search, "search"),
     Fav(R.string.nav_title_fav, Icons.Default.Favorite, "fav")
 }
 
@@ -58,10 +63,15 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val startNavigationItem = NavigationItem.Home
                 val currentNavigationItem = remember { mutableStateOf(startNavigationItem) }
-//                val current = remember { mutableStateOf("home") }
-                Scaffold(modifier = Modifier.fillMaxSize(),
+
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
                     topBar = {
-                        TopAppBar(snackBarHostState)
+
+                        TopAppBar(
+                            snackbarHostState = snackBarHostState,
+                            titleResId = currentNavigationItem.value.titleID
+                        )
                     },
                     snackbarHost = {
                         SnackbarHost(snackBarHostState)
@@ -72,14 +82,18 @@ class MainActivity : ComponentActivity() {
                                 NavigationBarItem(
                                     selected = currentNavigationItem.value == navigationItem,
                                     onClick = {
-                                        navController.navigate(navigationItem.route)
+                                        navController.navigate(navigationItem.route) {
+
+                                            popUpTo(navController.graph.startDestinationId)
+                                            launchSingleTop = true
+                                        }
                                         currentNavigationItem.value = navigationItem
                                     },
                                     label = {
                                         Text(stringResource(navigationItem.titleID))
                                     },
                                     icon = {
-                                        Icon(navigationItem.icon, contentDescription = "")
+                                        Icon(navigationItem.icon, contentDescription = null)
                                     }
                                 )
                             }
@@ -95,6 +109,7 @@ class MainActivity : ComponentActivity() {
                                 when (navigationItem) {
                                     NavigationItem.Home -> DetailCocktailScreen(Modifier.padding(innerPadding))
                                     NavigationItem.List -> CategoriesScreen(Modifier.padding(innerPadding))
+                                    NavigationItem.Search -> SearchScreen(Modifier.padding(innerPadding))
                                     NavigationItem.Fav -> FavoriteScreen(Modifier.padding(innerPadding))
                                 }
                             }
@@ -108,69 +123,64 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopAppBar(snackbarHostState: SnackbarHostState, drinkID: String? = null) {
+fun TopAppBar(
+    snackbarHostState: SnackbarHostState,
+    titleResId: Int,
+    drinkID: String? = null
+) {
     CenterAlignedTopAppBar(
         title = {
-            Text("Random")
+
+            Text(stringResource(titleResId))
         },
         actions = {
-            val added = stringResource(R.string.snackbar_added)
-            val removed = stringResource(R.string.snackbar_removed)
 
-            val snackbarScope = rememberCoroutineScope()
+            if (drinkID != null) {
+                val added = stringResource(R.string.snackbar_added)
+                val removed = stringResource(R.string.snackbar_removed)
+                val snackbarScope = rememberCoroutineScope()
+                val context = LocalContext.current
+                val sharedPreferences = SharedPreferencesHelper(context)
+                val drinkList = sharedPreferences.getFavoriteList()
+                val isFav = remember { mutableStateOf(getFavoriteStatusForID(drinkID, drinkList)) }
 
-            val context = LocalContext.current
-            val sharedPreferences = SharedPreferencesHelper(context)
-            val drinkList = sharedPreferences.getFavoriteList()
-            val isFav = remember { mutableStateOf(getFavoriteStatusForID(drinkID, drinkList)) }
-
-            IconToggleButton(
-                isFav.value,
-                onCheckedChange = {
-                    isFav.value = !isFav.value
-                    // TOAST
-//                    Toast.makeText(
-//                        context,
-//                        if (isFav.value) added else removed,
-//                        Toast.LENGTH_SHORT
-//                    ).show()
-                    snackbarScope.launch {
-                        snackbarHostState.showSnackbar(if (isFav.value) added else removed)
-                    }
-
-                    if (drinkID != null) {
+                IconToggleButton(
+                    checked = isFav.value,
+                    onCheckedChange = {
+                        isFav.value = !isFav.value
+                        snackbarScope.launch {
+                            snackbarHostState.showSnackbar(if (isFav.value) added else removed)
+                        }
                         updateFavoriteList(
-                            drinkID.toString(),
+                            drinkID,
                             isFav.value,
                             sharedPreferences,
-                            drinkList)
+                            drinkList
+                        )
                     }
+                ) {
+                    Icon(
+                        imageVector = if (isFav.value) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "fav"
+                    )
                 }
-            ) {
-                Icon(
-                    imageVector = if (isFav.value) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = "fav"
-                )
             }
         }
     )
 }
 
 fun getFavoriteStatusForID(drinkID: String?, list: ArrayList<String>): Boolean {
-    for (id in list) {
-        if (drinkID == id) {
-            return true
-        }
-    }
-    return false
+    return list.contains(drinkID)
 }
 
-fun updateFavoriteList(drinkID: String,
-                       shouldBeAdded: Boolean,
-                       sharedPreferencesHelper: SharedPreferencesHelper,
-                       list: ArrayList<String>) {
+fun updateFavoriteList(
+    drinkID: String,
+    shouldBeAdded: Boolean,
+    sharedPreferencesHelper: SharedPreferencesHelper,
+    list: ArrayList<String>
+) {
     if (shouldBeAdded) {
-        list.add(drinkID)
+        if (!list.contains(drinkID)) list.add(drinkID)
     } else {
         list.remove(drinkID)
     }
