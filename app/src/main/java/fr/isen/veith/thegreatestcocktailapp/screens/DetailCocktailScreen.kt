@@ -42,7 +42,7 @@ fun DetailCocktailScreen(
     modifier: Modifier,
     drinkID: String? = null,
     refreshTrigger: Int = 0,
-    onDrinkLoaded: (String) -> Unit = {}
+    onDrinkLoaded: (String, String, String) -> Unit = { _, _, _ -> }
 ) {
     val drinkState = remember { mutableStateOf<DrinkModel?>(null) }
     val scrollState = rememberScrollState()
@@ -58,7 +58,9 @@ fun DetailCocktailScreen(
                 drinkState.value = drink
 
 
-                drink?.id?.let { onDrinkLoaded(it) }
+                drink?.let {
+                    onDrinkLoaded(it.id, it.name, it.instructions ?: "")
+                }
             }
             override fun onFailure(call: Call<Drinks>, t: Throwable) {
                 Log.e("API_ERROR", t.message.toString())

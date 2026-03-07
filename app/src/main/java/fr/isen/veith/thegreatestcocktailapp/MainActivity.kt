@@ -1,5 +1,6 @@
 package fr.isen.veith.thegreatestcocktailapp
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -46,6 +47,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             TheGreatestCocktailAppTheme {
+                val context = LocalContext.current
                 val snackBarHostState = remember { SnackbarHostState() }
                 val navController = rememberNavController()
                 val startNavigationItem = NavigationItem.Home
@@ -53,7 +55,20 @@ class MainActivity : ComponentActivity() {
 
 
                 val currentDrinkId = remember { mutableStateOf<String?>(null) }
+                val currentDrinkName = remember { mutableStateOf("") }
+                val currentDrinkInstructions = remember { mutableStateOf("") }
                 val refreshTrigger = remember { mutableStateOf(0) }
+
+
+                val onShareAction = {
+                    val sendIntent: Intent = Intent().apply {
+                        action = Intent.ACTION_SEND
+                        putExtra(Intent.EXTRA_TEXT, "Découvre ce cocktail : ${currentDrinkName.value} !\n\nRecette :\n${currentDrinkInstructions.value}")
+                        type = "text/plain"
+                    }
+                    val shareIntent = Intent.createChooser(sendIntent, null)
+                    context.startActivity(shareIntent)
+                }
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -62,11 +77,13 @@ class MainActivity : ComponentActivity() {
                         TopAppBar(
                             snackbarHostState = snackBarHostState,
                             titleResId = currentNavigationItem.value.titleID,
-
                             drinkID = if (currentNavigationItem.value == NavigationItem.Home) currentDrinkId.value else null,
-
                             onReload = if (currentNavigationItem.value == NavigationItem.Home) {
                                 { refreshTrigger.value++ }
+                            } else null,
+
+                            onShare = if (currentNavigationItem.value == NavigationItem.Home && currentDrinkId.value != null) {
+                                onShareAction
                             } else null
                         )
                     },
@@ -82,7 +99,6 @@ class MainActivity : ComponentActivity() {
                                             launchSingleTop = true
                                         }
                                         currentNavigationItem.value = navigationItem
-
                                         if (navigationItem != NavigationItem.Home) currentDrinkId.value = null
                                     },
                                     label = { Text(stringResource(navigationItem.titleID)) },
@@ -103,10 +119,13 @@ class MainActivity : ComponentActivity() {
                         composable(NavigationItem.Home.route) {
                             DetailCocktailScreen(
                                 modifier = Modifier.padding(innerPadding),
-
                                 refreshTrigger = refreshTrigger.value,
 
-                                onDrinkLoaded = { id -> currentDrinkId.value = id }
+                                onDrinkLoaded = { id, name, instructions ->
+                                    currentDrinkId.value = id
+                                    currentDrinkName.value = name
+                                    currentDrinkInstructions.value = instructions
+                                }
                             )
                         }
                         composable(NavigationItem.List.route) { CategoriesScreen(Modifier.padding(innerPadding)) }
@@ -125,7 +144,8 @@ fun TopAppBar(
     snackbarHostState: SnackbarHostState,
     titleResId: Int,
     drinkID: String? = null,
-    onReload: (() -> Unit)? = null
+    onReload: (() -> Unit)? = null,
+    onShare: (() -> Unit)? = null
 ) {
     CenterAlignedTopAppBar(
         title = {
@@ -136,13 +156,17 @@ fun TopAppBar(
             titleContentColor = Color.White
         ),
         actions = {
-
             if (onReload != null) {
                 IconButton(onClick = onReload) {
                     Icon(Icons.Default.Refresh, contentDescription = "Reload", tint = Color.White)
                 }
             }
 
+            if (onShare != null) {
+                IconButton(onClick = onShare) {
+                    Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.White)
+                }
+            }
 
             if (drinkID != null) {
                 val added = stringResource(R.string.snackbar_added)
