@@ -7,29 +7,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconToggleButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -37,10 +23,11 @@ import fr.isen.veith.thegreatestcocktailapp.screens.CategoriesScreen
 import fr.isen.veith.thegreatestcocktailapp.screens.DetailCocktailScreen
 import fr.isen.veith.thegreatestcocktailapp.screens.FavoriteScreen
 import fr.isen.veith.thegreatestcocktailapp.screens.SearchScreen
-
 import fr.isen.veith.thegreatestcocktailapp.ui.theme.TheGreatestCocktailAppTheme
 import kotlinx.coroutines.launch
 
+val PurpleAccent = Color(0xFF9D4EDD)
+val DarkBackground = Color(0xFF0F0F0F)
 
 enum class NavigationItem(
     val titleID: Int,
@@ -64,56 +51,67 @@ class MainActivity : ComponentActivity() {
                 val startNavigationItem = NavigationItem.Home
                 val currentNavigationItem = remember { mutableStateOf(startNavigationItem) }
 
+
+                val currentDrinkId = remember { mutableStateOf<String?>(null) }
+                val refreshTrigger = remember { mutableStateOf(0) }
+
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
+                    containerColor = DarkBackground,
                     topBar = {
-
                         TopAppBar(
                             snackbarHostState = snackBarHostState,
-                            titleResId = currentNavigationItem.value.titleID
+                            titleResId = currentNavigationItem.value.titleID,
+
+                            drinkID = if (currentNavigationItem.value == NavigationItem.Home) currentDrinkId.value else null,
+
+                            onReload = if (currentNavigationItem.value == NavigationItem.Home) {
+                                { refreshTrigger.value++ }
+                            } else null
                         )
                     },
-                    snackbarHost = {
-                        SnackbarHost(snackBarHostState)
-                    },
+                    snackbarHost = { SnackbarHost(snackBarHostState) },
                     bottomBar = {
-                        NavigationBar {
+                        NavigationBar(containerColor = DarkBackground, tonalElevation = 8.dp) {
                             NavigationItem.entries.forEach { navigationItem ->
                                 NavigationBarItem(
                                     selected = currentNavigationItem.value == navigationItem,
                                     onClick = {
                                         navController.navigate(navigationItem.route) {
-
                                             popUpTo(navController.graph.startDestinationId)
                                             launchSingleTop = true
                                         }
                                         currentNavigationItem.value = navigationItem
+
+                                        if (navigationItem != NavigationItem.Home) currentDrinkId.value = null
                                     },
-                                    label = {
-                                        Text(stringResource(navigationItem.titleID))
-                                    },
-                                    icon = {
-                                        Icon(navigationItem.icon, contentDescription = null)
-                                    }
+                                    label = { Text(stringResource(navigationItem.titleID)) },
+                                    icon = { Icon(navigationItem.icon, contentDescription = null) },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = PurpleAccent,
+                                        selectedTextColor = PurpleAccent,
+                                        indicatorColor = PurpleAccent.copy(alpha = 0.2f),
+                                        unselectedIconColor = Color.Gray,
+                                        unselectedTextColor = Color.Gray
+                                    )
                                 )
                             }
                         }
                     }
                 ) { innerPadding ->
-                    NavHost(
-                        navController = navController,
-                        startDestination = startNavigationItem.route
-                    ) {
-                        NavigationItem.entries.forEach { navigationItem ->
-                            composable(navigationItem.route) {
-                                when (navigationItem) {
-                                    NavigationItem.Home -> DetailCocktailScreen(Modifier.padding(innerPadding))
-                                    NavigationItem.List -> CategoriesScreen(Modifier.padding(innerPadding))
-                                    NavigationItem.Search -> SearchScreen(Modifier.padding(innerPadding))
-                                    NavigationItem.Fav -> FavoriteScreen(Modifier.padding(innerPadding))
-                                }
-                            }
+                    NavHost(navController = navController, startDestination = startNavigationItem.route) {
+                        composable(NavigationItem.Home.route) {
+                            DetailCocktailScreen(
+                                modifier = Modifier.padding(innerPadding),
+
+                                refreshTrigger = refreshTrigger.value,
+
+                                onDrinkLoaded = { id -> currentDrinkId.value = id }
+                            )
                         }
+                        composable(NavigationItem.List.route) { CategoriesScreen(Modifier.padding(innerPadding)) }
+                        composable(NavigationItem.Search.route) { SearchScreen(Modifier.padding(innerPadding)) }
+                        composable(NavigationItem.Fav.route) { FavoriteScreen(Modifier.padding(innerPadding)) }
                     }
                 }
             }
@@ -126,14 +124,25 @@ class MainActivity : ComponentActivity() {
 fun TopAppBar(
     snackbarHostState: SnackbarHostState,
     titleResId: Int,
-    drinkID: String? = null
+    drinkID: String? = null,
+    onReload: (() -> Unit)? = null
 ) {
     CenterAlignedTopAppBar(
         title = {
-
-            Text(stringResource(titleResId))
+            Text(stringResource(titleResId), color = Color.White, style = MaterialTheme.typography.titleLarge)
         },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = DarkBackground,
+            titleContentColor = Color.White
+        ),
         actions = {
+
+            if (onReload != null) {
+                IconButton(onClick = onReload) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Reload", tint = Color.White)
+                }
+            }
+
 
             if (drinkID != null) {
                 val added = stringResource(R.string.snackbar_added)
@@ -142,7 +151,7 @@ fun TopAppBar(
                 val context = LocalContext.current
                 val sharedPreferences = SharedPreferencesHelper(context)
                 val drinkList = sharedPreferences.getFavoriteList()
-                val isFav = remember { mutableStateOf(getFavoriteStatusForID(drinkID, drinkList)) }
+                val isFav = remember(drinkID) { mutableStateOf(getFavoriteStatusForID(drinkID, drinkList)) }
 
                 IconToggleButton(
                     checked = isFav.value,
@@ -151,17 +160,13 @@ fun TopAppBar(
                         snackbarScope.launch {
                             snackbarHostState.showSnackbar(if (isFav.value) added else removed)
                         }
-                        updateFavoriteList(
-                            drinkID,
-                            isFav.value,
-                            sharedPreferences,
-                            drinkList
-                        )
+                        updateFavoriteList(drinkID, isFav.value, sharedPreferences, drinkList)
                     }
                 ) {
                     Icon(
                         imageVector = if (isFav.value) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "fav"
+                        contentDescription = "fav",
+                        tint = if (isFav.value) PurpleAccent else Color.White
                     )
                 }
             }

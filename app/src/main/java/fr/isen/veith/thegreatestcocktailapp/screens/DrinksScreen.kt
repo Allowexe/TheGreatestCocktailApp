@@ -2,12 +2,14 @@ package fr.isen.veith.thegreatestcocktailapp.screens
 
 import android.content.Intent
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,6 +38,9 @@ fun DrinksScreen(modifier: Modifier, category: String) {
     val context = LocalContext.current
 
 
+    val purpleAccent = Color(0xFF9D4EDD)
+    val darkBackground = Color(0xFF0F0F0F)
+
     LaunchedEffect(category) {
         val call = NetworkManager.api.getDrinksByCategory(category)
         call.enqueue(object : Callback<Drinks> {
@@ -53,70 +58,96 @@ fun DrinksScreen(modifier: Modifier, category: String) {
         })
     }
 
-    Box(modifier = modifier
-        .fillMaxSize()
-        .background(brush = Brush.verticalGradient(listOf(Color.Cyan, Color.Black)))) {
-
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color(0xFF2D004D), darkBackground)
+                )
+            )
+    ) {
         if (isLoading.value) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                color = purpleAccent
+            )
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
+                modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
 
                 item {
+                    Spacer(Modifier.height(16.dp))
                     Text(
                         text = category,
                         color = Color.White,
                         fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(bottom = 12.dp)
                     )
                 }
 
-
                 items(drinksState.value) { drink ->
-                    Button(
-                        onClick = {
 
+                    Card(
+                        onClick = {
                             val intent = Intent(context, DetailCocktailActivity::class.java)
                             intent.putExtra("drinkID", drink.id)
                             context.startActivity(intent)
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White.copy(0.2f),
-                            contentColor = Color.White
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.White.copy(alpha = 0.05f)
                         ),
-                        contentPadding = PaddingValues(12.dp)
+                        border = BorderStroke(1.dp, purpleAccent.copy(alpha = 0.3f))
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
                         ) {
 
-                            AsyncImage(
-                                model = drink.imageURL,
-                                contentDescription = drink.name,
-                                modifier = Modifier
-                                    .size(60.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.Gray.copy(0.3f)),
-                                contentScale = ContentScale.Crop
-                            )
+                            Surface(
+                                shape = CircleShape,
+                                border = BorderStroke(1.dp, purpleAccent.copy(alpha = 0.5f)),
+                                color = Color.Transparent
+                            ) {
+                                AsyncImage(
+                                    model = drink.imageURL,
+                                    contentDescription = drink.name,
+                                    modifier = Modifier
+                                        .size(65.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
 
                             Spacer(modifier = Modifier.width(16.dp))
 
                             Text(
                                 text = drink.name,
+                                color = Color.White,
                                 fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier.weight(1f)
+                            )
+
+
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Default.Menu,
+                                contentDescription = null,
+                                tint = purpleAccent.copy(alpha = 0.6f),
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
                 }
+
+                item { Spacer(Modifier.height(80.dp)) }
             }
         }
     }

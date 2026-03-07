@@ -1,6 +1,7 @@
 package fr.isen.veith.thegreatestcocktailapp.ui.theme
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,42 +28,19 @@ import fr.isen.veith.thegreatestcocktailapp.network.DrinkModel
 
 @Composable
 fun DrinkItemRow(drink: DrinkModel, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(24.dp),
-
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f)),
-        border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.2f))
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(12.dp)
-        ) {
+    GlassCard(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp).clickable { onClick() }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
                 model = drink.imageURL,
-                contentDescription = drink.name,
-                modifier = Modifier
-                    .size(65.dp)
-                    .clip(CircleShape),
+                contentDescription = null,
+                modifier = Modifier.size(60.dp).clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(Modifier.width(16.dp))
             Column {
-                Text(
-                    text = drink.name,
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text(drink.name, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 if (drink.category.isNotEmpty()) {
-                    Text(
-                        text = drink.category,
-                        color = Color.Cyan.copy(alpha = 0.7f),
-                        fontSize = 14.sp
-                    )
+                    Text(drink.category, color = Color.White.copy(0.6f), fontSize = 14.sp)
                 }
             }
         }

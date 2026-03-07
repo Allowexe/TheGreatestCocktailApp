@@ -55,6 +55,8 @@ dependencies {
     implementation(libs.retrofit.gson)
     implementation(libs.coil)
     implementation(libs.coil.network)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.compose.foundation)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

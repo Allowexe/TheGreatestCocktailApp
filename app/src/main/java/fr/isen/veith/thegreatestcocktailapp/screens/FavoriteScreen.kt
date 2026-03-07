@@ -1,6 +1,7 @@
 package fr.isen.veith.thegreatestcocktailapp.screens
 
 import android.content.Intent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,10 +35,12 @@ fun FavoriteScreen(modifier: Modifier) {
     val context = LocalContext.current
     val sharedPreferences = remember { SharedPreferencesHelper(context) }
 
-
     val favoriteDrinks = remember { mutableStateListOf<DrinkModel>() }
     val isLoading = remember { mutableStateOf(true) }
 
+
+    val purpleAccent = Color(0xFF9D4EDD)
+    val darkBackground = Color(0xFF0F0F0F)
 
     LaunchedEffect(Unit) {
         val favIds = sharedPreferences.getFavoriteList()
@@ -65,56 +68,97 @@ fun FavoriteScreen(modifier: Modifier) {
         }
     }
 
-    Box(modifier = modifier
-        .fillMaxSize()
-        .background(brush = Brush.verticalGradient(listOf(Color.Cyan, Color.Black)))) {
-
-        if (isLoading.value) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
-        } else if (favoriteDrinks.isEmpty()) {
-            Text(
-                "Aucun favori pour le moment",
-                color = Color.White,
-                modifier = Modifier.align(Alignment.Center)
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color(0xFF2D004D), darkBackground)
+                )
             )
+    ) {
+        if (isLoading.value) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                color = purpleAccent
+            )
+        } else if (favoriteDrinks.isEmpty()) {
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "Aucun favori pour le moment",
+                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 18.sp
+                )
+            }
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
+                modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+
+                item {
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "Mes Favoris",
+                        color = Color.White,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                }
+
                 items(favoriteDrinks) { drink ->
-                    Button(
+
+                    Card(
                         onClick = {
                             val intent = Intent(context, DetailCocktailActivity::class.java)
                             intent.putExtra("drinkID", drink.id)
                             context.startActivity(intent)
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White.copy(0.2f)
-                        )
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.White.copy(alpha = 0.05f)
+                        ),
+                        border = BorderStroke(1.dp, purpleAccent.copy(alpha = 0.3f))
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth().padding(8.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
                         ) {
-                            AsyncImage(
-                                model = drink.imageURL,
-                                contentDescription = drink.name,
-                                modifier = Modifier.size(50.dp).clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
+                            Surface(
+                                shape = CircleShape,
+                                border = BorderStroke(1.dp, purpleAccent.copy(alpha = 0.5f)),
+                                color = Color.Transparent
+                            ) {
+                                AsyncImage(
+                                    model = drink.imageURL,
+                                    contentDescription = drink.name,
+                                    modifier = Modifier
+                                        .size(60.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+
                             Spacer(Modifier.width(16.dp))
+
                             Text(
                                 text = drink.name,
                                 fontSize = 18.sp,
                                 color = Color.White,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
                 }
+
+                item { Spacer(Modifier.height(80.dp)) }
             }
         }
     }

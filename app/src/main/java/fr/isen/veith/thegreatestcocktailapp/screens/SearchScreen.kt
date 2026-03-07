@@ -35,16 +35,25 @@ fun SearchScreen(modifier: Modifier) {
     val isSearching = remember { mutableStateOf(false) }
 
 
+    val purpleAccent = Color(0xFF9D4EDD)
+    val darkBackground = Color(0xFF0F0F0F)
+
     Box(modifier = modifier
         .fillMaxSize()
-        .background(brush = Brush.verticalGradient(listOf(Color(0xFF00B4D8), Color.Black)))) {
+        .background(
+            brush = Brush.verticalGradient(
+                colors = listOf(Color(0xFF2D004D), darkBackground)
+            )
+        )
+    ) {
+        Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+            Spacer(Modifier.height(16.dp))
 
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             Text(
                 text = "Recherche",
                 color = Color.White,
                 fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.ExtraBold,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
@@ -52,19 +61,21 @@ fun SearchScreen(modifier: Modifier) {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Nom du cocktail...", color = Color.White.copy(alpha = 0.5f)) },
+                placeholder = { Text("Nom du cocktail...", color = Color.White.copy(alpha = 0.4f)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
-                    focusedContainerColor = Color.White.copy(alpha = 0.1f),
-                    unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
-                    focusedBorderColor = Color.Cyan,
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.3f)
+                    focusedContainerColor = Color.White.copy(alpha = 0.05f),
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedBorderColor = purpleAccent,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                    cursorColor = purpleAccent
                 ),
                 trailingIcon = {
+
                     IconButton(onClick = {
                         if (searchQuery.isNotEmpty()) {
                             isSearching.value = true
@@ -79,7 +90,7 @@ fun SearchScreen(modifier: Modifier) {
                             })
                         }
                     }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Cyan)
+                        Icon(Icons.Default.Search, contentDescription = "Search", tint = purpleAccent)
                     }
                 }
             )
@@ -87,18 +98,26 @@ fun SearchScreen(modifier: Modifier) {
             Spacer(modifier = Modifier.height(20.dp))
 
             if (isSearching.value) {
-                Box(modifier = Modifier.fillWeight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color.Cyan)
+                Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = purpleAccent)
                 }
             } else {
-
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(bottom = 90.dp)
                 ) {
-                    items(searchResults.value) { drink ->
+                    if (searchResults.value.isEmpty() && searchQuery.isNotEmpty() && !isSearching.value) {
+                        item {
+                            Text(
+                                "Aucun résultat trouvé",
+                                color = Color.White.copy(alpha = 0.5f),
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    }
 
+                    items(searchResults.value) { drink ->
                         DrinkItemRow(drink = drink) {
                             val intent = Intent(context, DetailCocktailActivity::class.java)
                             intent.putExtra("drinkID", drink.id)
@@ -110,6 +129,3 @@ fun SearchScreen(modifier: Modifier) {
         }
     }
 }
-
-
-fun Modifier.fillWeight(weight: Float): Modifier = this.then(Modifier)

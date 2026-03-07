@@ -15,16 +15,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import fr.isen.veith.thegreatestcocktailapp.R
 import fr.isen.veith.thegreatestcocktailapp.network.DrinkModel
 import fr.isen.veith.thegreatestcocktailapp.network.Drinks
 import fr.isen.veith.thegreatestcocktailapp.network.NetworkManager
@@ -32,138 +32,151 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
+
+val PurpleAccent = Color(0xFF9D4EDD)
+val DeepPurple = Color(0xFF2D004D)
+val DarkBackground = Color(0xFF0F0F0F)
+
 @Composable
-fun DetailCocktailScreen(modifier: Modifier, drinkID: String? = null) {
+fun DetailCocktailScreen(
+    modifier: Modifier,
+    drinkID: String? = null,
+    refreshTrigger: Int = 0,
+    onDrinkLoaded: (String) -> Unit = {}
+) {
     val drinkState = remember { mutableStateOf<DrinkModel?>(null) }
     val scrollState = rememberScrollState()
 
 
-    LaunchedEffect(drinkID) {
-        val call = if (drinkID != null) {
-            NetworkManager.api.getDrinkById(drinkID)
-        } else {
-            NetworkManager.api.getRandomCocktail()
-        }
+    LaunchedEffect(drinkID, refreshTrigger) {
+        val call = if (drinkID != null) NetworkManager.api.getDrinkById(drinkID)
+        else NetworkManager.api.getRandomCocktail()
 
         call.enqueue(object : Callback<Drinks> {
             override fun onResponse(call: Call<Drinks>, response: Response<Drinks>) {
-                drinkState.value = response.body()?.drinks?.firstOrNull()
+                val drink = response.body()?.drinks?.firstOrNull()
+                drinkState.value = drink
+
+
+                drink?.id?.let { onDrinkLoaded(it) }
             }
             override fun onFailure(call: Call<Drinks>, t: Throwable) {
-                Log.e("API_ERROR", "Échec de récupération : ${t.message}")
+                Log.e("API_ERROR", t.message.toString())
             }
         })
     }
 
     val drink = drinkState.value
 
-
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(brush = Brush.verticalGradient(listOf(Color(0xFF00B4D8), Color.Black)))
+            .background(brush = Brush.verticalGradient(listOf(DeepPurple, DarkBackground)))
     ) {
         if (drink == null) {
-
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = Color.White
-            )
+            CircularProgressIndicator(Modifier.align(Alignment.Center), color = PurpleAccent)
         } else {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
 
-                AsyncImage(
-                    model = drink.imageURL,
-                    contentDescription = drink.name,
-                    modifier = Modifier
-                        .size(220.dp)
-                        .clip(CircleShape)
-                        .background(Color.Gray.copy(0.3f)),
-                    contentScale = ContentScale.Crop
-                )
+                Box(modifier = Modifier.fillMaxWidth().height(350.dp)) {
+                    AsyncImage(
+                        model = drink.imageURL,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize().blur(25.dp).alpha(0.3f),
+                        contentScale = ContentScale.Crop
+                    )
 
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            border = BorderStroke(4.dp, Color.White.copy(alpha = 0.2f)),
+                            shadowElevation = 16.dp,
+                            color = Color.Transparent
+                        ) {
+                            AsyncImage(
+                                model = drink.imageURL,
+                                contentDescription = drink.name,
+                                modifier = Modifier.size(200.dp).clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
 
-                Text(
-                    text = drink.name,
-                    color = Color.White,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                        Spacer(Modifier.height(16.dp))
 
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CategoryBadge(text = drink.category, color = Color(0xFF4895EF))
-                    drink.glass?.let { CategoryBadge(text = it, color = Color(0xFF4CC9F0)) }
+                        Text(
+                            text = drink.name,
+                            color = Color.White,
+                            fontSize = 30.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
                 }
 
 
-                DetailCard(title = stringResource(R.string.detail_ingredients_title)) {
-                    val list = drink.getIngredientsList()
-                    if (list.isEmpty()) {
-                        Text("Aucun ingrédient répertorié", color = Color.White.copy(0.7f))
-                    } else {
-                        list.forEach { item ->
-                            Text("• $item", color = Color.White, fontSize = 16.sp)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CategoryBadge(drink.category, PurpleAccent)
+                    drink.glass?.let {
+                        Spacer(Modifier.width(8.dp))
+                        CategoryBadge(it, PurpleAccent.copy(alpha = 0.7f))
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+
+                GlassCard(title = "Ingrédients") {
+                    drink.getIngredientsList().forEach { ingredient ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        ) {
+
+                            Box(Modifier.size(6.dp).background(PurpleAccent, CircleShape))
+                            Spacer(Modifier.width(12.dp))
+                            Text(ingredient, color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp)
                         }
                     }
                 }
 
 
-                DetailCard(title = "Recette") {
+                GlassCard(title = "Instructions") {
                     Text(
-                        text = drink.instructions ?: "Aucune instruction disponible.",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        lineHeight = 22.sp
+                        text = drink.instructions ?: "Aucune instruction.",
+                        color = Color.White.copy(alpha = 0.8f),
+                        lineHeight = 24.sp,
+                        fontSize = 16.sp
                     )
                 }
 
-
-                Spacer(modifier = Modifier.height(50.dp))
+                Spacer(Modifier.height(120.dp))
             }
         }
     }
 }
 
 @Composable
-fun InfoBadge(text: String) {
-    Surface(
-        color = Color.White.copy(0.2f),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            color = Color.White,
-            fontSize = 14.sp
-        )
-    }
-}
-
-@Composable
-fun DetailCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+fun GlassCard(title: String, content: @Composable ColumnScope.() -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(0.1f))
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.05f)),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = title,
-                color = Color.Cyan,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+        Column(Modifier.padding(20.dp)) {
+            Text(title, color = PurpleAccent, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+            Spacer(Modifier.height(12.dp))
             content()
         }
     }
@@ -181,7 +194,7 @@ fun CategoryBadge(text: String, color: Color) {
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             color = Color.White,
             fontSize = 12.sp,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Bold
         )
     }
 }
