@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">TheGreatestCocktailApp</string>
+    <string name="title_activity_drinks">DrinksActivity</string>
+    <string name="title_activity_detail_cocktail">DetailCocktailActivity</string>
+    <string name="nav_title_random">Today</string>
+    <string name="nav_title_category">Categories</string>
+    <string name="nav_title_fav">Favorites</string>
+    <string name="snackbar_added">Added to favorites</string>
+    <string name="snackbar_removed">Removed from favorites</string>
+    <string name="detail_ingredients_title">Ingredients</string>
+    <string name="nav_title_search">Search</string>
+</resources>
