@@ -2,11 +2,11 @@
     <string name="app_name">TheGreatestCocktailApp</string>
     <string name="title_activity_drinks">DrinksActivity</string>
     <string name="title_activity_detail_cocktail">DetailCocktailActivity</string>
-    <string name="nav_title_random">A la une</string>
-    <string name="nav_title_category">Catégories</string>
-    <string name="nav_title_fav">Favoris</string>
-    <string name="snackbar_added">Ajouté aux favoris</string>
-    <string name="snackbar_removed">Retiré des favoris</string>
+    <string name="nav_title_random">Today</string>
+    <string name="nav_title_category">Categories</string>
+    <string name="nav_title_fav">Favorites</string>
+    <string name="snackbar_added">Added to favorites</string>
+    <string name="snackbar_removed">Removed from favorites</string>
     <string name="detail_ingredients_title">Ingredients</string>
-    <string name="nav_title_search">Recherche</string>
+    <string name="nav_title_search">Search</string>
 </resources>

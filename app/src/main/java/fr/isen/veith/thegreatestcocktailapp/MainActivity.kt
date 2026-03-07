@@ -63,7 +63,7 @@ class MainActivity : ComponentActivity() {
                 val onShareAction = {
                     val sendIntent: Intent = Intent().apply {
                         action = Intent.ACTION_SEND
-                        putExtra(Intent.EXTRA_TEXT, "Découvre ce cocktail : ${currentDrinkName.value} !\n\nRecette :\n${currentDrinkInstructions.value}")
+                        putExtra(Intent.EXTRA_TEXT, "Discover this cocktail : ${currentDrinkName.value} !\n\nRecipe :\n${currentDrinkInstructions.value}")
                         type = "text/plain"
                     }
                     val shareIntent = Intent.createChooser(sendIntent, null)

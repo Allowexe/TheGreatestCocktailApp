@@ -48,7 +48,7 @@ fun SearchScreen(modifier: Modifier) {
             Spacer(Modifier.height(16.dp))
 
             Text(
-                text = "Recherche",
+                text = "Search",
                 color = Color.White,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.ExtraBold
@@ -60,7 +60,7 @@ fun SearchScreen(modifier: Modifier) {
                 horizontalArrangement = Arrangement.End
             ) {
                 Text(
-                    text = if (searchByIngredient) "Par Ingrédient" else "Par Nom",
+                    text = if (searchByIngredient) "By Ingredient" else "By Name",
                     color = purpleAccent.copy(alpha = 0.8f),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
@@ -129,7 +129,6 @@ fun SearchScreen(modifier: Modifier) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Zone de résultats animée
             AnimatedContent(
                 targetState = isSearching.value,
                 transitionSpec = {
@@ -144,7 +143,7 @@ fun SearchScreen(modifier: Modifier) {
                 } else {
                     if (searchResults.value.isEmpty() && searchQuery.isNotEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Aucun cocktail trouvé", color = Color.White.copy(alpha = 0.5f))
+                            Text("No cocktail found", color = Color.White.copy(alpha = 0.5f))
                         }
                     } else {
                         LazyColumn(

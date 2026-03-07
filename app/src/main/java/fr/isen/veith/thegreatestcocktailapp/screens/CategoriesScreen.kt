@@ -45,7 +45,7 @@ fun CategoriesScreen(modifier: Modifier) {
                 isLoading.value = false
             }
             override fun onFailure(call: Call<Drinks>, t: Throwable) {
-                Log.e("API_ERROR", "Erreur catégories : ${t.message}")
+                Log.e("API_ERROR", "Categories API call failed : ${t.message}")
                 isLoading.value = false
             }
         })
@@ -79,7 +79,7 @@ fun CategoriesScreen(modifier: Modifier) {
                     item {
                         Spacer(Modifier.height(16.dp))
                         Text(
-                            text = "Catégories",
+                            text = "Categories",
                             color = Color.White,
                             fontSize = 32.sp,
                             fontWeight = FontWeight.ExtraBold,

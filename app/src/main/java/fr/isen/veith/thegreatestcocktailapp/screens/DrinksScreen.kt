@@ -54,7 +54,7 @@ fun DrinksScreen(modifier: Modifier, category: String) {
             }
 
             override fun onFailure(call: Call<Drinks>, t: Throwable) {
-                Log.e("API_ERROR", "Erreur cocktails : ${t.message}")
+                Log.e("API_ERROR", "Cocktail API request failed : ${t.message}")
                 isLoading.value = false
             }
         })

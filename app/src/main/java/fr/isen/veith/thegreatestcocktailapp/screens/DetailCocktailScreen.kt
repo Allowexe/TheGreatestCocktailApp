@@ -140,7 +140,7 @@ fun DetailCocktailScreen(
                         visible = true,
                         enter = fadeIn(tween(600, 200)) + slideInVertically(initialOffsetY = { 40 })
                     ) {
-                        GlassCard(title = "Ingrédients") {
+                        GlassCard(title = "Ingredients") {
                             drink.getIngredientsList().forEach { ingredient ->
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,

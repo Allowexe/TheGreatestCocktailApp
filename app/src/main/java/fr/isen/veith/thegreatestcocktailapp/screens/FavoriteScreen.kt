@@ -92,7 +92,7 @@ fun FavoriteScreen(modifier: Modifier) {
             } else if (favoriteDrinks.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        "Aucun favori pour le moment",
+                        "No favorites for now",
                         color = Color.White.copy(alpha = 0.5f),
                         fontSize = 18.sp
                     )
@@ -105,7 +105,7 @@ fun FavoriteScreen(modifier: Modifier) {
                     item {
                         Spacer(Modifier.height(16.dp))
                         Text(
-                            text = "Mes Favoris",
+                            text = "My Favorites",
                             color = Color.White,
                             fontSize = 32.sp,
                             fontWeight = FontWeight.ExtraBold,
