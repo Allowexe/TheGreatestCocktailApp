@@ -1,11 +1,13 @@
 package fr.isen.veith.thegreatestcocktailapp.screens
 
 import android.content.Intent
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -37,7 +39,6 @@ fun FavoriteScreen(modifier: Modifier) {
 
     val favoriteDrinks = remember { mutableStateListOf<DrinkModel>() }
     val isLoading = remember { mutableStateOf(true) }
-
 
     val purpleAccent = Color(0xFF9D4EDD)
     val darkBackground = Color(0xFF0F0F0F)
@@ -77,88 +78,102 @@ fun FavoriteScreen(modifier: Modifier) {
                 )
             )
     ) {
-        if (isLoading.value) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = purpleAccent
-            )
-        } else if (favoriteDrinks.isEmpty()) {
-            Column(
-                modifier = Modifier.align(Alignment.Center),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    "Aucun favori pour le moment",
-                    color = Color.White.copy(alpha = 0.5f),
-                    fontSize = 18.sp
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-
-                item {
-                    Spacer(Modifier.height(16.dp))
+        AnimatedContent(
+            targetState = isLoading.value,
+            transitionSpec = {
+                fadeIn(animationSpec = tween(500)) togetherWith fadeOut(animationSpec = tween(400))
+            },
+            label = "FavoriteState"
+        ) { loading ->
+            if (loading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = purpleAccent)
+                }
+            } else if (favoriteDrinks.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text = "Mes Favoris",
-                        color = Color.White,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.padding(bottom = 12.dp)
+                        "Aucun favori pour le moment",
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 18.sp
                     )
                 }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item {
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            text = "Mes Favoris",
+                            color = Color.White,
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                    }
 
-                items(favoriteDrinks) { drink ->
+                    itemsIndexed(favoriteDrinks) { index, drink ->
+                        var isItemVisible by remember { mutableStateOf(false) }
+                        LaunchedEffect(Unit) { isItemVisible = true }
 
-                    Card(
-                        onClick = {
-                            val intent = Intent(context, DetailCocktailActivity::class.java)
-                            intent.putExtra("drinkID", drink.id)
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color.White.copy(alpha = 0.05f)
-                        ),
-                        border = BorderStroke(1.dp, purpleAccent.copy(alpha = 0.3f))
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp)
+                        AnimatedVisibility(
+                            visible = isItemVisible,
+                            enter = fadeIn(animationSpec = tween(500, delayMillis = index * 40)) +
+                                    slideInVertically(
+                                        initialOffsetY = { it / 3 },
+                                        animationSpec = tween(500, delayMillis = index * 40)
+                                    )
                         ) {
-                            Surface(
-                                shape = CircleShape,
-                                border = BorderStroke(1.dp, purpleAccent.copy(alpha = 0.5f)),
-                                color = Color.Transparent
+                            Card(
+                                onClick = {
+                                    val intent = Intent(context, DetailCocktailActivity::class.java)
+                                    intent.putExtra("drinkID", drink.id)
+                                    context.startActivity(intent)
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color.White.copy(alpha = 0.05f)
+                                ),
+                                border = BorderStroke(1.dp, purpleAccent.copy(alpha = 0.3f))
                             ) {
-                                AsyncImage(
-                                    model = drink.imageURL,
-                                    contentDescription = drink.name,
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier
-                                        .size(60.dp)
-                                        .clip(CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
+                                        .fillMaxWidth()
+                                        .padding(12.dp)
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        border = BorderStroke(1.dp, purpleAccent.copy(alpha = 0.5f)),
+                                        color = Color.Transparent
+                                    ) {
+                                        AsyncImage(
+                                            model = drink.imageURL,
+                                            contentDescription = drink.name,
+                                            modifier = Modifier
+                                                .size(60.dp)
+                                                .clip(CircleShape),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+
+                                    Spacer(Modifier.width(16.dp))
+
+                                    Text(
+                                        text = drink.name,
+                                        fontSize = 18.sp,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
                             }
-
-                            Spacer(Modifier.width(16.dp))
-
-                            Text(
-                                text = drink.name,
-                                fontSize = 18.sp,
-                                color = Color.White,
-                                fontWeight = FontWeight.SemiBold
-                            )
                         }
                     }
-                }
 
-                item { Spacer(Modifier.height(80.dp)) }
+                    item { Spacer(Modifier.height(100.dp)) }
+                }
             }
         }
     }

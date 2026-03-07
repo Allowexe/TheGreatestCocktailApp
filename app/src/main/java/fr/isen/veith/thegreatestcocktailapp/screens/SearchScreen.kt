@@ -1,10 +1,12 @@
 package fr.isen.veith.thegreatestcocktailapp.screens
 
 import android.content.Intent
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
@@ -33,18 +35,14 @@ fun SearchScreen(modifier: Modifier) {
     var searchQuery by remember { mutableStateOf("") }
     val searchResults = remember { mutableStateOf<List<DrinkModel>>(emptyList()) }
     val isSearching = remember { mutableStateOf(false) }
-
+    var searchByIngredient by remember { mutableStateOf(false) }
 
     val purpleAccent = Color(0xFF9D4EDD)
     val darkBackground = Color(0xFF0F0F0F)
 
     Box(modifier = modifier
         .fillMaxSize()
-        .background(
-            brush = Brush.verticalGradient(
-                colors = listOf(Color(0xFF2D004D), darkBackground)
-            )
-        )
+        .background(brush = Brush.verticalGradient(listOf(Color(0xFF2D004D), darkBackground)))
     ) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
             Spacer(Modifier.height(16.dp))
@@ -53,15 +51,45 @@ fun SearchScreen(modifier: Modifier) {
                 text = "Recherche",
                 color = Color.White,
                 fontSize = 32.sp,
-                fontWeight = FontWeight.ExtraBold,
-                modifier = Modifier.padding(bottom = 16.dp)
+                fontWeight = FontWeight.ExtraBold
             )
 
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
+            ) {
+                Text(
+                    text = if (searchByIngredient) "Par Ingrédient" else "Par Nom",
+                    color = purpleAccent.copy(alpha = 0.8f),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.width(12.dp))
+                Switch(
+                    checked = searchByIngredient,
+                    onCheckedChange = {
+                        searchByIngredient = it
+                        searchResults.value = emptyList()
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = purpleAccent,
+                        uncheckedThumbColor = Color.Gray,
+                        uncheckedTrackColor = Color.Black
+                    )
+                )
+            }
 
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Nom du cocktail...", color = Color.White.copy(alpha = 0.4f)) },
+                placeholder = {
+                    Text(
+                        if (searchByIngredient) "Ex: Vodka, Rum..." else "Margarita, Mojito...",
+                        color = Color.White.copy(alpha = 0.4f)
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true,
@@ -69,17 +97,21 @@ fun SearchScreen(modifier: Modifier) {
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
                     focusedContainerColor = Color.White.copy(alpha = 0.05f),
-                    unfocusedContainerColor = Color.Transparent,
                     focusedBorderColor = purpleAccent,
                     unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
                     cursorColor = purpleAccent
                 ),
                 trailingIcon = {
-
                     IconButton(onClick = {
                         if (searchQuery.isNotEmpty()) {
                             isSearching.value = true
-                            NetworkManager.api.searchDrinksByName(searchQuery).enqueue(object : Callback<Drinks> {
+                            val call = if (searchByIngredient) {
+                                NetworkManager.api.filterByIngredient(searchQuery)
+                            } else {
+                                NetworkManager.api.searchDrinksByName(searchQuery)
+                            }
+
+                            call.enqueue(object : Callback<Drinks> {
                                 override fun onResponse(call: Call<Drinks>, response: Response<Drinks>) {
                                     searchResults.value = response.body()?.drinks ?: emptyList()
                                     isSearching.value = false
@@ -90,38 +122,55 @@ fun SearchScreen(modifier: Modifier) {
                             })
                         }
                     }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search", tint = purpleAccent)
+                        Icon(Icons.Default.Search, contentDescription = null, tint = purpleAccent)
                     }
                 }
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            if (isSearching.value) {
-                Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = purpleAccent)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 90.dp)
-                ) {
-                    if (searchResults.value.isEmpty() && searchQuery.isNotEmpty() && !isSearching.value) {
-                        item {
-                            Text(
-                                "Aucun résultat trouvé",
-                                color = Color.White.copy(alpha = 0.5f),
-                                modifier = Modifier.padding(16.dp)
-                            )
-                        }
+            // Zone de résultats animée
+            AnimatedContent(
+                targetState = isSearching.value,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(400)) togetherWith fadeOut(animationSpec = tween(400))
+                },
+                label = "SearchState"
+            ) { loading ->
+                if (loading) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = purpleAccent)
                     }
+                } else {
+                    if (searchResults.value.isEmpty() && searchQuery.isNotEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Aucun cocktail trouvé", color = Color.White.copy(alpha = 0.5f))
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            contentPadding = PaddingValues(bottom = 90.dp)
+                        ) {
+                            itemsIndexed(searchResults.value) { index, drink ->
+                                var isItemVisible by remember { mutableStateOf(false) }
+                                LaunchedEffect(Unit) { isItemVisible = true }
 
-                    items(searchResults.value) { drink ->
-                        DrinkItemRow(drink = drink) {
-                            val intent = Intent(context, DetailCocktailActivity::class.java)
-                            intent.putExtra("drinkID", drink.id)
-                            context.startActivity(intent)
+                                AnimatedVisibility(
+                                    visible = isItemVisible,
+                                    enter = fadeIn(animationSpec = tween(500, delayMillis = index * 40)) +
+                                            slideInVertically(
+                                                initialOffsetY = { it / 3 },
+                                                animationSpec = tween(500, delayMillis = index * 40)
+                                            )
+                                ) {
+                                    DrinkItemRow(drink = drink) {
+                                        val intent = Intent(context, DetailCocktailActivity::class.java)
+                                        intent.putExtra("drinkID", drink.id)
+                                        context.startActivity(intent)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
